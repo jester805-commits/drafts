@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# Local state — never commit. Contains style profiles derived from your
+# private messages, your saved contacts, and the server token.
+.imsg_assist/
+*/.imsg_assist/
+
+# Diagnostic output — probe.py prints real names and phone numbers
+contacts_debug.txt
+probe_output.txt
+*.log
+
+# Never commit message data or secrets
+chat.db*
+*.abcddb*
+.env
+*.pem
+*.key

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drafts</title>
+<style>
+  :root{
+    --paper:#DDE2DC; --paper-2:#D2D8D1; --card:#EDF0EB;
+    --ink:#16211F; --ink-soft:#4A5A54; --rule:#B4BEB5;
+    --ochre:#9C6B12; --ochre-soft:#EBDCBB;
+    --live:#2C6350; --alert:#8A2F33; --alert-soft:#F3E4E2;
+    --display:"Iowan Old Style","Charter","Palatino",Georgia,serif;
+    --body:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+       font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;height:100vh;
+       overflow:hidden}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  :focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+
+  .shell{display:grid;grid-template-columns:296px 1fr;height:100vh}
+  .rail{background:var(--paper-2);border-right:1px solid var(--rule);
+        padding:24px 22px 32px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  .brand{font-family:var(--display);font-size:29px;letter-spacing:-.02em;margin:0}
+  .brand em{font-style:italic;color:var(--ochre)}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+       text-transform:uppercase;color:var(--ink-soft);margin-top:4px}
+
+  .block{border-top:1px solid var(--rule);padding-top:15px}
+  .block h2{font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+            text-transform:uppercase;color:var(--ink-soft);margin:0 0 10px}
+  input[type=text],textarea{width:100%;font:inherit;background:var(--card);
+    border:1px solid var(--rule);border-radius:3px;padding:8px 9px;color:var(--ink)}
+  input[type=text]{font-family:var(--mono);font-size:13.5px}
+  textarea{font-family:var(--mono);font-size:12px;line-height:1.6;resize:vertical}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+       padding:8px 13px;border-radius:3px;font-size:13.5px;font-weight:500;
+       border:1px solid var(--ink);background:var(--ink);color:var(--paper);width:100%}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+  .btn.ghost:hover:not(:disabled){border-color:var(--ink)}
+  .btn.go{background:var(--live);border-color:var(--live)}
+  .btn.stop{background:transparent;color:var(--alert);border-color:var(--alert)}
+  .btn.sm{padding:5px 10px;font-size:12.5px;width:auto}
+  .row{display:flex;gap:7px}.row>*{flex:1}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:8px}
+  .err{font-size:12.5px;color:var(--alert);margin-top:8px;
+       border-left:2px solid var(--alert);padding-left:8px}
+
+  .modes{display:flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+  .modes button{flex:1;padding:7px 5px;font-size:12px;background:var(--card);
+                color:var(--ink-soft);border-right:1px solid var(--rule)}
+  .modes button:last-child{border-right:none}
+  .modes button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .cfg{margin-top:10px;font-size:12px}
+  .cfg label{display:flex;justify-content:space-between;align-items:center;
+             gap:8px;margin-bottom:7px}
+  .cfg input[type=number]{width:58px;font-family:var(--mono);font-size:12px;padding:3px 5px;
+    background:var(--card);border:1px solid var(--rule);border-radius:2px}
+  .cfg input[type=checkbox]{width:14px;height:14px;accent-color:var(--ochre)}
+
+  .roster{display:flex;flex-direction:column;gap:1px}
+  .rost{display:flex;align-items:center;gap:7px;width:100%;padding:6px 8px;
+        border-radius:3px;text-align:left;font-size:13px}
+  .rost:hover{background:var(--ochre-soft)}
+  .rost.open{background:var(--card)}
+  .rost .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rost .sub{font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+  .rost .pin{font-size:12px;color:var(--rule);padding:1px 3px;flex:none}
+  .rost .pin.on{color:var(--ochre)}
+  .rost .del{font-size:14px;color:var(--rule);padding:1px 4px;flex:none}
+  .rost .del:hover{color:var(--alert)}
+  .picks{margin-top:8px;max-height:180px;overflow:auto;
+         border:1px solid var(--rule);border-radius:3px;background:var(--card)}
+  .pick{display:flex;justify-content:space-between;align-items:center;gap:9px;
+        width:100%;padding:6px 9px;text-align:left;border-bottom:1px solid var(--rule)}
+  .pick:last-child{border-bottom:none}
+  .pick:hover{background:var(--ochre-soft)}
+  .pick .who{flex:1;min-width:0}
+  .pick .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pick .no{font-family:var(--mono);font-size:10px;color:var(--ink-soft)}
+  .pick .meta{font-family:var(--mono);font-size:10px;color:var(--ink-soft);
+              white-space:nowrap;text-align:right}
+  .pick b{font-weight:400;color:var(--live);display:block}
+  .pickrow{display:flex;align-items:stretch;border-bottom:1px solid var(--rule)}
+  .pickrow:last-child{border-bottom:none}
+  .pickrow .pick{border-bottom:none;flex:1;min-width:0}
+  .namebtn{flex:none;padding:0 8px;font-family:var(--mono);font-size:10px;
+           color:var(--ochre);border-left:1px solid var(--rule);white-space:nowrap}
+  .namebtn:hover{background:var(--ochre-soft)}
+  .picks-empty{padding:9px;font-size:12px;color:var(--ink-soft);text-align:center}
+
+  /* ── board ── */
+  .board{display:flex;gap:0;overflow-x:auto;height:100vh}
+  .col{flex:0 0 384px;border-right:1px solid var(--rule);display:flex;
+       flex-direction:column;height:100vh;min-width:0}
+  .col:last-child{border-right:none}
+  .col-head{padding:15px 17px 12px;border-bottom:1px solid var(--rule);
+            background:var(--paper-2)}
+  .col-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .num{font-family:var(--display);font-size:19px;letter-spacing:-.01em;
+       text-align:left;padding:0;flex:1;min-width:0;overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+  .num:hover{color:var(--ochre)}
+  .x{font-size:17px;color:var(--ink-soft);line-height:1;padding:2px 5px}
+  .x:hover{color:var(--alert)}
+  .state{font-family:var(--mono);font-size:10px;letter-spacing:.07em;
+         text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;
+         gap:6px;margin-top:5px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--rule);flex:none}
+  .state.on .dot{background:var(--live);animation:pulse 2.4s ease-in-out infinite}
+  .state.wait .dot{background:var(--ochre)}
+  .state.armed .dot{background:var(--alert)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.28}}
+  .col-acts{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap}
+
+  .thread{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px;
+          padding:15px 17px}
+  .msg{max-width:82%;padding:7px 11px;border-radius:14px;font-size:14px;
+       white-space:pre-wrap;word-wrap:break-word}
+  .msg.them{align-self:flex-start;background:var(--card);border:1px solid var(--rule);
+            border-bottom-left-radius:4px}
+  .msg.me{align-self:flex-end;background:var(--ink);color:var(--paper);
+          border-bottom-right-radius:4px}
+  .msg.me.pending{opacity:.55}
+  .stamp{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);
+         letter-spacing:.06em;margin:4px 1px 0}
+  .stamp.me{align-self:flex-end}
+
+  .draft{align-self:flex-end;max-width:88%;background:transparent;
+         border:1.5px dashed var(--ochre);border-radius:14px;
+         border-bottom-right-radius:4px;padding:10px 12px;animation:settle .3s ease-out}
+  .draft.auto{border-color:var(--alert);border-style:solid;background:var(--alert-soft)}
+  @keyframes settle{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .draft .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+              text-transform:uppercase;color:var(--ochre);margin-bottom:5px}
+  .draft.auto .lbl{color:var(--alert)}
+  .draft .txt{font-size:14px;white-space:pre-wrap;min-height:1.3em}
+  .draft textarea{margin-top:5px;background:var(--paper);border-color:var(--ochre);
+                  font-family:var(--body);font-size:14px}
+  .acts{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
+  .bar{height:2px;background:var(--rule);border-radius:2px;overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:var(--alert);width:100%;
+         transform-origin:left;animation:drain linear forwards}
+  @keyframes drain{to{transform:scaleX(0)}}
+
+  .col-foot{padding:8px 17px;border-top:1px solid var(--rule);font-family:var(--mono);
+            font-size:10px;color:var(--ink-soft);background:var(--paper-2);
+            display:flex;justify-content:space-between;gap:8px}
+  .col .err{margin:0 17px 10px}
+
+  .void{margin:auto;text-align:center;max-width:340px;color:var(--ink-soft);padding:40px}
+  .void h3{font-family:var(--display);font-size:20px;color:var(--ink);margin:0 0 7px}
+  .void p{margin:0;font-size:13.5px}
+
+  details.guide{border-top:1px solid var(--rule);padding-top:14px;font-size:12px;
+                color:var(--ink-soft)}
+  details.guide summary{font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+                        text-transform:uppercase;cursor:pointer}
+  details.guide p{margin:9px 0 0}
+  details.guide code{font-family:var(--mono);font-size:11px;background:var(--card);
+                     padding:1px 3px;border-radius:2px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+         background:var(--ink);color:var(--paper);padding:9px 17px;border-radius:3px;
+         font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
+  .toast.show{opacity:1}
+  .toast.bad{background:var(--alert)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div>
+      <h1 class="brand">Draf<em>ts</em></h1>
+      <div class="tag">Local · multi-thread</div>
+    </div>
+
+    <section class="block">
+      <h2>Add a contact</h2>
+      <input type="text" id="handle" placeholder="+15551234567" autocomplete="off">
+      <div class="row" style="margin-top:7px">
+        <button class="btn" id="addBtn">Add</button>
+        <button class="btn ghost" id="browseBtn">Browse</button>
+      </div>
+      <input type="text" id="filter" placeholder="Filter by name or number"
+             autocomplete="off" hidden style="margin-top:7px">
+      <div class="picks" id="picks" hidden></div>
+      <div class="hint" id="hintAdd">Each contact gets its own column, voice and state.</div>
+      <div class="err" id="errAdd" hidden></div>
+    </section>
+
+    <section class="block" id="rosterBlock" hidden>
+      <h2>Saved</h2>
+      <div class="roster" id="roster"></div>
+      <div class="hint">Click to open. The pin opens it automatically next time.</div>
+      <button class="btn ghost sm" id="namesBtn" style="width:100%;margin-top:8px">
+        Fill names from Contacts</button>
+      <div class="hint" id="namesHint"></div>
+    </section>
+
+    <section class="block">
+      <h2>Reply mode</h2>
+      <div class="modes">
+        <button id="modeApprove" aria-pressed="true">Approve each</button>
+        <button id="modeAuto" aria-pressed="false">Auto-send</button>
+      </div>
+      <div class="cfg" id="cfg" hidden>
+        <label>Wait before sending
+          <span><input type="number" id="cfgDelay" value="20" min="0" max="120"> sec</span></label>
+        <label>Stop each after
+          <span><input type="number" id="cfgMax" value="10" min="1" max="50"> replies</span></label>
+        <label>Hold times, numbers, promises
+          <input type="checkbox" id="cfgHold" checked></label>
+      </div>
+      <div class="hint" id="hintMode">Applies to columns you start after changing it.</div>
+    </section>
+
+    <details class="guide">
+      <summary>How this works</summary>
+      <p>Messages are read from the Messages database on this Mac. Nothing is written to it.</p>
+      <p>Each column polls independently. Contacts you aren't watching stay idle.</p>
+      <p>Two things leave your machine: a sample of your own sent messages when learning
+         a voice, and recent thread context when drafting.</p>
+      <p>Stop the server with <code>Ctrl-C</code> in Terminal.</p>
+    </details>
+  </aside>
+
+  <main class="board" id="board">
+    <div class="void" id="void">
+      <h3>No contacts yet</h3>
+      <p>Add a number on the left, or hit Browse to pick from your recent
+         conversations. You can run several at once.</p>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+const $ = id => document.getElementById(id);
+const SESSIONS = new Map();
+let AUTO_MODE = false, POLL = null;
+
+async function api(path, body){
+  const r = await fetch(path, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","X-Token":TOKEN},
+    body:JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({error:"Server sent something unreadable."}));
+  if(r.status===403 || d.error==="STALE_TOKEN"){
+    stopAll();
+    throw new Error("This tab's link is out of date. Reopen the URL from Terminal.");
+  }
+  if(!r.ok) throw new Error(d.error || "Request failed.");
+  return d;
+}
+function toast(msg, bad){
+  const t=$("toast"); t.textContent=msg; t.className="toast show"+(bad?" bad":"");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className="toast",2800);
+}
+const cfg = () => ({
+  delay: Math.max(0, parseInt($("cfgDelay").value)||0),
+  cap:   Math.max(1, parseInt($("cfgMax").value)||10),
+  hold:  $("cfgHold").checked
+});
+
+// ── session lifecycle ──────────────────────────────────────────────────────
+function makeSession(info){
+  const s = {
+    handle: info.handle, cursor: null, watching:false, auto:false, drafting:false,
+    pending:null, countdown:null, sentAuto:0, cap:10, delay:20, hold:true,
+    hasStyle: info.hasStyle, el:{}, seen:new Set(), polling:false
+  };
+  SESSIONS.set(s.handle, s);
+  buildColumn(s, info);
+  return s;
+}
+function dropSession(s){
+  stopWatch(s);
+  s.el.col.remove();
+  SESSIONS.delete(s.handle);
+  renderRoster();
+  if(!SESSIONS.size) $("void").hidden = false;
+}
+function stopAll(){ SESSIONS.forEach(stopWatch); }
+
+function buildColumn(s, info){
+  $("void").hidden = true;
+  const col = document.createElement("section");
+  col.className = "col";
+  col.innerHTML = `
+    <div class="col-head">
+      <div class="col-top">
+        <button class="num" title="Rename"></button>
+        <button class="x" title="Close column">&times;</button>
+      </div>
+      <div class="sub"></div>
+      <div class="state"><span class="dot"></span><span class="st">Idle</span></div>
+      <div class="col-acts">
+        <button class="btn go sm act-watch">Start</button>
+        <button class="btn ghost sm act-draft">Draft now</button>
+        <button class="btn ghost sm act-voice">Voice</button>
+      </div>
+    </div>
+    <div class="thread"></div>
+    <div class="err" hidden></div>
+    <div class="col-foot"><span class="poll"></span><span class="tally"></span></div>`;
+  s.label = info.label || s.handle;
+  col.querySelector(".num").textContent = s.label;
+  const sub = col.querySelector(".sub");
+  sub.textContent = s.label === s.handle ? "" : s.handle;
+  sub.style.cssText = "font-family:var(--mono);font-size:10px;color:var(--ink-soft);margin-top:2px";
+  col.querySelector(".num").onclick = async () => {
+    const v = window.prompt(
+      "Name for this contact (leave blank to use Contacts)", s.label);
+    if(v === null) return;
+    const label = v.trim();
+    try{
+      const d = await api("/api/roster/save", {handle:s.handle, label:label,
+        pinned:(ROSTER.find(x=>x.handle===s.handle)||{}).pinned});
+      ROSTER = d.roster || [];
+      const me = ROSTER.find(x => x.handle === s.handle);
+      s.label = me ? me.label : (label || s.handle);
+      col.querySelector(".num").textContent = s.label;
+      sub.textContent = s.label === s.handle ? "" : s.handle;
+      renderRoster();
+    }catch(e){ showErr(s, e.message); }
+  };
+  $("board").appendChild(col);
+
+  s.el = {
+    col, thread: col.querySelector(".thread"), st: col.querySelector(".st"),
+    state: col.querySelector(".state"), err: col.querySelector(".err"),
+    poll: col.querySelector(".poll"), tally: col.querySelector(".tally"),
+    watch: col.querySelector(".act-watch"), draft: col.querySelector(".act-draft"),
+    voice: col.querySelector(".act-voice")
+  };
+  col.querySelector(".x").onclick = () => dropSession(s);
+  s.el.watch.onclick = () => toggleWatch(s);
+  s.el.draft.onclick = () => { clearDraft(s); makeDraft(s); };
+  s.el.voice.onclick = () => voicePanel(s);
+
+  renderThread(s, info.messages);
+  setState(s, s.hasStyle ? "Ready" : "Needs a voice", "");
+  s.el.watch.disabled = !s.hasStyle;
+  s.el.draft.disabled = !s.hasStyle;
+  s.el.tally.textContent = `${info.total} msgs · ${info.mine} yours`;
+  if(!s.hasStyle) showErr(s, "Click Voice to learn how you write to them.");
+}
+
+function setState(s, txt, cls){
+  s.el.st.textContent = txt;
+  s.el.state.className = "state " + (cls||"");
+}
+function showErr(s, msg){
+  if(!msg){ s.el.err.hidden = true; return; }
+  s.el.err.textContent = msg; s.el.err.hidden = false;
+}
+
+// ── thread rendering ───────────────────────────────────────────────────────
+function bubble(m){
+  const d=document.createElement("div");
+  d.className="msg "+(m.mine?"me":"them");
+  if(m.id != null) d.dataset.id = m.id;
+  d.textContent=m.text;
+  return d;
+}
+function renderThread(s, msgs){
+  const t=s.el.thread; t.innerHTML="";
+  s.seen = new Set();
+  msgs.forEach(m=>{ if(m.id!=null) s.seen.add(m.id); t.appendChild(bubble(m)); });
+  if(msgs.length){
+    const st=document.createElement("div");
+    st.className="stamp"+(msgs[msgs.length-1].mine?" me":"");
+    st.textContent=msgs[msgs.length-1].when;
+    t.appendChild(st);
+  }
+  t.scrollTop=t.scrollHeight;
+}
+function appendMsg(s, m){
+  // Never render the same row twice. The poll re-reads messages we may have
+  // already drawn optimistically after a send, and a slow poll can overlap
+  // the next one with the same cursor.
+  if(m.id != null){
+    if(s.seen.has(m.id)) return;
+    s.seen.add(m.id);
+  }
+  // A just-sent message arrives back from the database moments later. Replace
+  // the placeholder rather than stacking a second copy beneath it.
+  if(m.mine && m.id != null){
+    const ghost = [...s.el.thread.querySelectorAll(".msg.me.pending")]
+      .find(el => el.textContent.trim() === (m.text||"").trim());
+    if(ghost){ ghost.remove(); }
+  }
+  const d = s.el.thread.querySelector(".draft");
+  const b = bubble(m);
+  if(d) d.before(b); else s.el.thread.appendChild(b);
+  s.el.thread.scrollTop = s.el.thread.scrollHeight;
+}
+
+function appendPending(s, text){
+  const b = bubble({mine:true, text:text});
+  b.classList.add("pending");
+  const d = s.el.thread.querySelector(".draft");
+  if(d) d.before(b); else s.el.thread.appendChild(b);
+  s.el.thread.scrollTop = s.el.thread.scrollHeight;
+}
+
+// ── drafting ───────────────────────────────────────────────────────────────
+function clearDraft(s){
+  if(s.countdown){ clearTimeout(s.countdown); s.countdown=null; }
+  const d = s.el.thread.querySelector(".draft");
+  if(d) d.remove();
+  s.pending = null;
+}
+async function makeDraft(s){
+  if(s.drafting) return;
+  s.drafting = true; showErr(s, ""); setState(s, "Writing", "wait");
+  try{
+    const d = await api("/api/draft", {handle:s.handle});
+    const held = s.auto && s.hold && d.risky && d.risky.length;
+    if(s.auto && !held) autoDraft(s, d.draft);
+    else {
+      manualDraft(s, d.draft);
+      if(held) toast(s.label + ": held — mentions " + d.risky.join(", "));
+      setState(s, held ? "Held for you" : "Waiting on you", "wait");
+    }
+  }catch(e){
+    showErr(s, e.message);
+    setState(s, "Draft failed", "wait");
+  }finally{ s.drafting = false; }
+}
+function manualDraft(s, text){
+  clearDraft(s);
+  const box=document.createElement("div"); box.className="draft";
+  box.innerHTML=`<div class="lbl">Draft — not sent</div><div class="txt"></div>
+    <div class="acts">
+      <button class="btn go sm" data-a="send">Send</button>
+      <button class="btn ghost sm" data-a="edit">Edit</button>
+      <button class="btn ghost sm" data-a="again">Again</button>
+      <button class="btn stop sm" data-a="skip">Skip</button>
+    </div>`;
+  box.querySelector(".txt").textContent = text;
+  s.el.thread.appendChild(box); s.el.thread.scrollTop = s.el.thread.scrollHeight;
+  s.pending = text;
+  box.querySelector('[data-a="skip"]').onclick = () => {
+    clearDraft(s); setState(s, s.watching?"Watching":"Ready", s.watching?"on":"");
+  };
+  box.querySelector('[data-a="again"]').onclick = () => { clearDraft(s); makeDraft(s); };
+  box.querySelector('[data-a="edit"]').onclick = () => editable(s, box);
+  box.querySelector('[data-a="send"]').onclick = () => fire(s, box, false);
+}
+function autoDraft(s, text){
+  clearDraft(s);
+  const box=document.createElement("div"); box.className="draft auto";
+  box.innerHTML=`<div class="lbl">Sending in <span class="cd">${s.delay}</span>s</div>
+    <div class="txt"></div>
+    <div class="acts">
+      <button class="btn stop sm" data-a="cancel">Cancel</button>
+      <button class="btn ghost sm" data-a="edit">Edit</button>
+      <button class="btn go sm" data-a="now">Now</button>
+    </div>
+    <div class="bar"><i style="animation-duration:${s.delay}s"></i></div>`;
+  box.querySelector(".txt").textContent = text;
+  s.el.thread.appendChild(box); s.el.thread.scrollTop = s.el.thread.scrollHeight;
+  s.pending = text;
+  setState(s, "Sending", "armed");
+
+  let left = s.delay;
+  const cd = box.querySelector(".cd");
+  const step = () => {
+    left--; if(cd) cd.textContent = Math.max(0,left);
+    if(left <= 0){ s.countdown=null; fire(s, box, true); }
+    else s.countdown = setTimeout(step, 1000);
+  };
+  s.countdown = s.delay > 0 ? setTimeout(step, 1000) : setTimeout(()=>fire(s,box,true), 300);
+
+  box.querySelector('[data-a="cancel"]').onclick = () => {
+    clearDraft(s); setState(s, s.watching?"Watching":"Ready", s.watching?"on":"");
+    toast(s.label + ": cancelled");
+  };
+  box.querySelector('[data-a="now"]').onclick = () => {
+    if(s.countdown){ clearTimeout(s.countdown); s.countdown=null; }
+    fire(s, box, true);
+  };
+  box.querySelector('[data-a="edit"]').onclick = () => {
+    if(s.countdown){ clearTimeout(s.countdown); s.countdown=null; }
+    const bar=box.querySelector(".bar"); if(bar) bar.remove();
+    box.querySelector(".lbl").textContent = "Paused — edit then send";
+    editable(s, box);
+  };
+}
+function editable(s, box){
+  const txt = box.querySelector(".txt");
+  if(box.querySelector("textarea")) return;
+  const ta=document.createElement("textarea"); ta.rows=3; ta.value=s.pending;
+  txt.replaceWith(ta); ta.focus();
+  ta.oninput = () => s.pending = ta.value;
+}
+async function fire(s, box, auto){
+  box.querySelectorAll("button").forEach(b=>b.disabled=true);
+  try{
+    await api("/api/send", {handle:s.handle, text:s.pending, auto:auto});
+    const sent = s.pending;
+    clearDraft(s);
+    appendPending(s, sent);
+    if(auto){
+      s.sentAuto++;
+      s.el.tally.textContent = `${s.sentAuto} of ${s.cap} auto-sent`;
+      if(s.sentAuto >= s.cap){
+        stopWatch(s);
+        showErr(s, `Stopped after ${s.cap} auto-replies. Start again to continue.`);
+        return;
+      }
+    }
+    setState(s, s.watching?"Watching":"Ready", s.watching?"on":"");
+  }catch(e){
+    clearDraft(s);
+    showErr(s, (auto?"Auto-send stopped: ":"") + e.message);
+    if(auto && s.watching) stopWatch(s);
+    else box.querySelectorAll("button").forEach(b=>b.disabled=false);
+  }
+}
+
+// ── watching ───────────────────────────────────────────────────────────────
+function toggleWatch(s){ s.watching ? stopWatch(s) : startWatch(s); }
+
+async function startWatch(s){
+  showErr(s, "");
+  const c = cfg();
+  if(AUTO_MODE){
+    const last4 = s.handle.replace(/\D/g,"").slice(-4);
+    const typed = window.prompt(
+      "AUTO-SEND\n\nReplies to " + s.label + " will send without your approval.\n" +
+      "Type the last 4 digits (" + last4 + ") to confirm.");
+    if(typed === null || typed.trim() !== last4){
+      showErr(s, "Not armed."); return;
+    }
+    s.auto = true; s.delay = c.delay; s.cap = c.cap; s.hold = c.hold; s.sentAuto = 0;
+    s.el.tally.textContent = `0 of ${s.cap} auto-sent`;
+  } else {
+    s.auto = false;
+  }
+  try{
+    const d = await api("/api/poll", {handle:s.handle, since:null});
+    s.cursor = d.cursor; renderThread(s, d.messages);
+  }catch(e){ showErr(s, e.message); return; }
+
+  s.watching = true;
+  s.el.watch.textContent = "Stop";
+  s.el.watch.className = "btn stop sm";
+  setState(s, s.auto ? "Armed" : "Watching", s.auto ? "armed" : "on");
+  ensurePoll();
+  tick(s);
+}
+function stopWatch(s){
+  s.watching = false;
+  clearDraft(s);
+  s.el.watch.textContent = "Start";
+  s.el.watch.className = "btn go sm";
+  s.el.poll.textContent = "";
+  setState(s, "Ready", "");
+  if(![...SESSIONS.values()].some(x=>x.watching)){ clearInterval(POLL); POLL=null; }
+}
+function ensurePoll(){
+  if(POLL) return;
+  POLL = setInterval(() => SESSIONS.forEach(s => { if(s.watching) tick(s); }), 4000);
+}
+async function tick(s){
+  if(!s.watching || s.polling) return;   // overlapping polls reuse a stale cursor
+  s.polling = true;
+  try{
+    const d = await api("/api/poll", {handle:s.handle, since:s.cursor});
+    s.cursor = d.cursor;
+    d.messages.forEach(m => appendMsg(s, m));
+    s.el.poll.textContent = "checked " +
+      new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit",second:"2-digit"});
+    if(d.incoming.length && !s.pending && !s.drafting) await makeDraft(s);
+  }catch(e){
+    showErr(s, "Can't reach the server — is it still running?");
+  }finally{ s.polling = false; }
+}
+
+// ── voice ──────────────────────────────────────────────────────────────────
+async function voicePanel(s){
+  const existing = s.el.col.querySelector(".voicebox");
+  if(existing){ existing.remove(); return; }
+  const box = document.createElement("div");
+  box.className = "voicebox";
+  box.style.cssText = "padding:12px 17px;border-bottom:1px solid var(--rule);background:var(--card)";
+  box.innerHTML = `
+    <div class="row"><button class="btn ghost sm vl">Learn from this thread</button>
+    <button class="btn ghost sm vg">All my threads</button></div>
+    <div class="row" style="margin-top:7px">
+      <select class="vsel" style="flex:2;font:inherit;font-size:12.5px;padding:6px;
+        background:var(--card);border:1px solid var(--rule);border-radius:3px;
+        color:var(--ink);min-width:0"><option value="">Saved styles…</option></select>
+      <button class="btn ghost sm vapply" style="flex:1">Apply</button>
+    </div>
+    <textarea rows="9" style="margin-top:8px" placeholder="No style guide yet."></textarea>
+    <div class="row" style="margin-top:7px">
+      <button class="btn ghost sm vs">Save to contact</button>
+      <button class="btn ghost sm vpreset">Save as reusable</button>
+    </div>`;
+  s.el.col.querySelector(".col-head").after(box);
+  const ta = box.querySelector("textarea");
+  const sel = box.querySelector(".vsel");
+  try{ const d = await api("/api/style",{handle:s.handle}); ta.value = d.profile || ""; }catch(e){}
+
+  async function loadPresets(){
+    try{
+      const d = await api("/api/presets");
+      sel.innerHTML = '<option value="">Saved styles…</option>' +
+        d.presets.map(p=>`<option value="${p.name}">${p.name}</option>`).join("");
+    }catch(e){}
+  }
+  loadPresets();
+
+  box.querySelector(".vapply").onclick = async () => {
+    if(!sel.value){ toast("Pick a saved style first", true); return; }
+    if(ta.value.trim() && !confirm(`Replace this contact's style guide with "${sel.value}"?`)) return;
+    try{
+      const d = await api("/api/presets/apply", {handle:s.handle, name:sel.value});
+      ta.value = d.profile;
+      s.hasStyle = true; s.el.watch.disabled=false; s.el.draft.disabled=false;
+      setState(s, "Ready", ""); showErr(s, "");
+      toast(s.label + ": using \"" + sel.value + "\"");
+    }catch(e){ showErr(s, e.message); }
+  };
+
+  box.querySelector(".vpreset").onclick = async () => {
+    const name = window.prompt(
+      "Save this style under a name you can reuse for other contacts.\n\n" +
+      "e.g. casual-friends, work, family");
+    if(name === null) return;
+    try{
+      const d = await api("/api/presets/save", {name:name, profile:ta.value});
+      await loadPresets(); sel.value = d.saved;
+      toast("Saved as \"" + d.saved + "\"");
+    }catch(e){ showErr(s, e.message); }
+  };
+
+  const learn = async (broad, btn) => {
+    const lbl = btn.textContent; btn.textContent = "Reading…";
+    box.querySelectorAll("button").forEach(b=>b.disabled=true);
+    try{
+      const d = await api("/api/style/learn", {handle:s.handle, broad:broad});
+      ta.value = d.profile;
+      s.hasStyle = true;
+      s.el.watch.disabled = false; s.el.draft.disabled = false;
+      setState(s, "Ready", ""); showErr(s, "");
+      toast(s.label + ": learned from " + d.sampled + " messages");
+      loadPresets();
+    }catch(e){ showErr(s, e.message); }
+    finally{ box.querySelectorAll("button").forEach(b=>b.disabled=false); btn.textContent = lbl; }
+  };
+  box.querySelector(".vl").onclick = e => learn(false, e.target);
+  box.querySelector(".vg").onclick = e => learn(true, e.target);
+  box.querySelector(".vs").onclick = async () => {
+    try{ await api("/api/style/save",{handle:s.handle, profile:ta.value});
+         toast(s.label + ": style saved"); }
+    catch(e){ showErr(s, e.message); }
+  };
+}
+
+// ── rail ───────────────────────────────────────────────────────────────────
+async function addContact(raw, quiet){
+  const h = (raw || $("handle").value).trim();
+  if(!h){ $("errAdd").textContent="Enter a number."; $("errAdd").hidden=false; return; }
+  $("errAdd").hidden = true;
+  $("addBtn").disabled = true; $("addBtn").textContent = "Checking…";
+  try{
+    const d = await api("/api/check", {handle:h});
+    if(SESSIONS.has(d.handle)){ toast("Already open"); return; }
+    const known = ROSTER.find(x => x.handle === d.handle);
+    d.label = known ? known.label : (d.name || d.handle);
+    makeSession(d);
+    if(!known){
+      try{
+        const r = await api("/api/roster/save", {handle:d.handle, label:d.label});
+        ROSTER = r.roster || [];
+      }catch(e){}
+    }
+    renderRoster();
+    $("handle").value = "";
+    $("hintAdd").textContent = `${SESSIONS.size} contact${SESSIONS.size>1?"s":""} open.`;
+  }catch(e){ $("errAdd").textContent = e.message; $("errAdd").hidden = false; }
+  finally{ $("addBtn").disabled=false; $("addBtn").textContent="Add"; }
+}
+$("addBtn").onclick = () => addContact();
+$("handle").addEventListener("keydown", e => { if(e.key==="Enter") addContact(); });
+
+let CONTACTS = [];
+
+function renderPicks(){
+  const p = $("picks");
+  const q = $("filter").value.trim().toLowerCase();
+  const digits = q.replace(/\D/g,"");
+  const hits = CONTACTS.filter(c => {
+    if(!q) return true;
+    if(c.name && c.name.toLowerCase().includes(q)) return true;
+    return digits && c.handle.replace(/\D/g,"").includes(digits);
+  });
+  if(!hits.length){
+    p.innerHTML = '<div class="picks-empty">Nothing matches.</div>';
+    return;
+  }
+  p.innerHTML = hits.slice(0,60).map(c => `
+    <div class="pickrow">
+      <button class="pick" data-h="${c.handle}">
+        <span class="who">
+          <span class="nm">${c.name ? c.name : c.handle}</span>
+          ${c.name ? `<span class="no">${c.handle}</span>` : ""}
+        </span>
+        <span class="meta">${c.count}${c.trained ? "<b>trained</b>" : ""}</span>
+      </button>
+      ${c.name ? "" : `<button class="namebtn" data-n="${c.handle}" title="Give this a name">+ name</button>`}
+    </div>`).join("");
+  p.querySelectorAll(".pick").forEach(b => b.onclick = () => {
+    $("picks").hidden = true; $("filter").hidden = true; $("filter").value = "";
+    addContact(b.dataset.h);
+  });
+  p.querySelectorAll(".namebtn").forEach(b => b.onclick = async (e) => {
+    e.stopPropagation();
+    const h = b.dataset.n;
+    const v = window.prompt("Name for " + h);
+    if(v === null || !v.trim()) return;
+    try{
+      const d = await api("/api/roster/save", {handle:h, label:v.trim()});
+      ROSTER = d.roster || [];
+      const c = CONTACTS.find(x => x.handle === h);
+      if(c) c.name = v.trim();
+      renderRoster(); renderPicks();
+    }catch(err){ toast(err.message, true); }
+  });
+}
+
+$("filter").addEventListener("input", renderPicks);
+
+$("browseBtn").onclick = async () => {
+  const p = $("picks");
+  if(!p.hidden){ p.hidden = true; $("filter").hidden = true; return; }
+  $("browseBtn").disabled = true;
+  try{
+    const d = await api("/api/contacts");
+    CONTACTS = d.contacts || [];
+    $("filter").hidden = false; p.hidden = false;
+    renderPicks();
+    $("hintAdd").textContent =
+      `${d.named} of ${CONTACTS.length} threads matched a contact ` +
+      `(${d.loaded} in your address book). Unmatched ones aren't saved contacts — ` +
+      `use "+ name" to label them.`;
+    $("filter").focus();
+  }catch(e){ $("errAdd").textContent = e.message; $("errAdd").hidden = false; }
+  finally{ $("browseBtn").disabled = false; }
+};
+
+let ROSTER = [];
+
+async function loadRoster(auto){
+  try{ const d = await api("/api/roster"); ROSTER = d.roster || []; }
+  catch(e){ return; }
+  renderRoster();
+  if(auto){
+    for(const r of ROSTER.filter(x=>x.pinned)) await addContact(r.handle, true);
+  }
+}
+function renderRoster(){
+  const box = $("roster");
+  $("rosterBlock").hidden = !ROSTER.length;
+  box.innerHTML = "";
+  ROSTER.forEach(r => {
+    const el = document.createElement("div");
+    el.className = "rost" + (SESSIONS.has(r.handle) ? " open" : "");
+    el.innerHTML = `<button class="pin ${r.pinned?"on":""}" title="Open on launch">&#9679;</button>
+      <button class="nm"></button>
+      <button class="del" title="Forget">&times;</button>`;
+    const nm = el.querySelector(".nm");
+    nm.innerHTML = `<span>${r.label}</span>` +
+      (r.label !== r.handle ? `<div class="sub">${r.handle}</div>` : "");
+    nm.onclick = () => addContact(r.handle);
+    el.querySelector(".pin").onclick = async () => {
+      await api("/api/roster/save", {handle:r.handle, label:r.label, pinned:!r.pinned});
+      await loadRoster(false);
+    };
+    el.querySelector(".del").onclick = async () => {
+      if(!confirm(`Forget ${r.label}? Their style guide stays saved.`)) return;
+      const d = await api("/api/roster/remove", {handle:r.handle});
+      ROSTER = d.roster || []; renderRoster();
+    };
+    box.appendChild(el);
+  });
+}
+
+$("namesBtn").onclick = async () => {
+  const b = $("namesBtn"); b.disabled = true; b.textContent = "Reading Contacts…";
+  try{
+    const d = await api("/api/names", {refresh:true});
+    if(!d.loaded){
+      $("namesHint").textContent =
+        "No contacts readable. Grant Full Disk Access to Terminal, or rename by hand.";
+      return;
+    }
+    await loadRoster(false);
+    const hit = ROSTER.filter(r => r.label !== r.handle).length;
+    SESSIONS.forEach(s => {
+      const r = ROSTER.find(x => x.handle === s.handle);
+      if(r && r.label !== s.label){
+        s.label = r.label;
+        s.el.col.querySelector(".num").textContent = r.label;
+        s.el.col.querySelector(".sub").textContent = r.label === s.handle ? "" : s.handle;
+      }
+    });
+    $("namesHint").textContent =
+      `${d.loaded} contacts read · ${hit} of ${ROSTER.length} named.`;
+  }catch(e){ $("namesHint").textContent = e.message; }
+  finally{ b.disabled = false; b.textContent = "Fill names from Contacts"; }
+};
+
+function setMode(auto){
+  AUTO_MODE = auto;
+  $("modeApprove").setAttribute("aria-pressed", String(!auto));
+  $("modeAuto").setAttribute("aria-pressed", String(auto));
+  $("cfg").hidden = !auto;
+  const running = [...SESSIONS.values()].filter(s=>s.watching).length;
+  $("hintMode").textContent = auto
+    ? (running ? "Stop and restart a column to arm it." : "Each column asks you to confirm when started.")
+    : "Nothing sends without you clicking Send.";
+}
+$("modeApprove").onclick = () => setMode(false);
+$("modeAuto").onclick = () => setMode(true);
+
+loadRoster(true);
+
+window.addEventListener("beforeunload", () => { clearInterval(POLL); stopAll(); });
+</script>
+</body>
+</html>
